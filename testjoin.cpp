@@ -14,6 +14,11 @@ struct patternlist{
     int bit_vector = 0;
     vector<int> T_P[64000];
 
+    patternlist()
+    {
+        //default constructor
+    }
+
     patternlist(string _sequence)
     {
         sequence = _sequence;
@@ -35,7 +40,7 @@ struct patternlist{
         }
     }
 
-    vector<int> bitPositions() 
+    vector<int> bitPositions() const
     {
         int number = bit_vector;
         vector<int> positions;
@@ -50,7 +55,12 @@ struct patternlist{
         return positions;
     }
 
-    void printinfo() 
+    int getFrequency() const
+    {
+        return frequency;
+    }
+
+    void printinfo() const 
     {
         cout << "sequence: " << sequence << endl;
         cout << "T and P values: " << endl;
@@ -87,7 +97,7 @@ struct patternlist{
 
 int main() {
 
-    patternlist A("A");         //testing patternList with random sequence
+    ///patternlist A("A");         //testing patternList with random sequence
 
     std::ifstream inputFile("dataset.txt");
     if (!inputFile.is_open()) {
@@ -95,7 +105,7 @@ int main() {
         return 1;
     }
 
-    unordered_map<string, int> itemFrequency;
+    unordered_map<string, patternlist> items;
     string line;
 
     int row = 1;
@@ -112,8 +122,8 @@ int main() {
                 row++;
                 column = 1;
             } else {
-                itemFrequency[item]++;
-                    A.position(row, column, item);
+                    items[item].sequence = item;
+                    items[item].position(row, column, item);
             }
         }
     }
@@ -138,16 +148,26 @@ int main() {
         }
 
         cout << "(Freq: ";
-        for (const auto& entry : itemFrequency) {
+        for (const auto& entry : items) {
             const string& item = entry.first;
-            const int frequency = entry.second;
-            cout << item << ": " << frequency << ", ";
+            const patternlist frequency = entry.second;
+            cout << item << ": " << frequency.getFrequency() << ", ";
         }
         cout << ")";
         cout << endl;
     }
 
-    A.printinfo();
+    cout << "sequences info: " << endl;
+
+    for (const auto& entry : items) {
+        const string& item = entry.first;
+        const patternlist inteminfo = entry.second;
+
+        cout << "Sequence: " <<  item << endl;
+        inteminfo.printinfo();
+    }
+
+    //A.printinfo();
 
     return 0;
 }
