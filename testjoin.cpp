@@ -36,7 +36,7 @@ struct patternlist{
         if(t > finalT) {
             frequency++;
             finalT = t;
-            bit_vector+= pow(2, finalT-1);
+            bit_vector |= (1 << (sizeof(int)*3 - finalT));
         }
     }
 
@@ -82,15 +82,7 @@ struct patternlist{
         vector<int> positions = bitPositions();
 
         cout << "Bit position of 1's in the bit vector: ";
-        int bit = 0;
-        for(int position: positions)
-        {
-            cout << position << " ";
-
-            bit += pow(10, position-1);
-        }
-        cout << endl;
-        cout << "Binary bit: " << bit << endl;
+        cout << "Binary bit: " << bitset<sizeof(int)*3>(bit_vector) << endl;
     }
 
 };
@@ -168,6 +160,6 @@ int main() {
     }
 
     //A.printinfo();
-
+    //cout << "testing popwer: " << pow(10, 9) + pow(10, 7) + pow(10, 5) + pow(10, 2) + 1 << endl;
     return 0;
 }
