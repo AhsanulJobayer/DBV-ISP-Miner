@@ -6,6 +6,9 @@
 #include <string>
 
 using namespace std;
+
+int minsup = 4;
+
 struct patternlist{
     string sequence;
 
@@ -29,9 +32,18 @@ struct patternlist{
         }
     }
 
-    void position(int t, int p, string _sequence) 
+    patternlist(const patternlist& other) {
+        sequence = other.sequence;
+        finalT = other.finalT;
+        frequency = other.frequency;
+        bit_vector = other.bit_vector;
+        for (int i = 0; i <= finalT; i++) {
+            T_P[i] = other.T_P[i];
+        }
+    }
+
+    void position(int t, int p)
     {
-        if(_sequence != sequence) return;
         T_P[t].push_back(p);
         if(t > finalT) {
             frequency++;
@@ -40,27 +52,26 @@ struct patternlist{
         }
     }
 
-    vector<int> bitPositions() const
-    {
-        int number = bit_vector;
-        vector<int> positions;
-        int position = 1;
-        while (number != 0) {
-            if ((number & 1) != 0) {
-                positions.push_back(position);
+        vector<int> bitPositions() const {
+            int number = bit_vector;
+            vector<int> positions;
+            int position = 1;
+            while (number != 0) {
+                if ((number & 1) != 0) {
+                    positions.push_back(position);
+                }
+                position++;
+                number = number >> 1;
             }
-            position++;
-            number = number >> 1;
+            return positions;
         }
-        return positions;
-    }
 
-    int getFrequency() const
+    int getFrequency() const //returns frequency of the sequence
     {
         return frequency;
     }
 
-    void printinfo() const 
+    void printinfo() const // printing all sorts of information with all kinds of format related to this patternlist
     {
         cout << "sequence: " << sequence << endl;
         cout << "T and P values: " << endl;
@@ -79,13 +90,37 @@ struct patternlist{
 
         cout << "Bit vector of the sequence: " << bit_vector <<  endl;
 
-        vector<int> positions = bitPositions();
+       // vector<int> positions = bitPositions();
 
         cout << "Bit position of 1's in the bit vector: ";
         cout << "Binary bit: " << bitset<sizeof(int)*3>(bit_vector) << endl;
     }
 
 };
+
+map<string, patternlist> items;
+
+patternlist single_itemset_join(const patternlist& seq1, const patternlist& seq2) {
+    cout << "testing" << endl;
+    patternlist answer(seq1.sequence + " " + seq2.sequence + " -1 -2");
+    answer.bit_vector = seq1.bit_vector & seq2.bit_vector;
+    vector<int> t_value = answer.bitPositions();
+
+    for (int i : t_value) {
+        int match = 0;
+        for (int value1 : seq1.T_P[i]) {
+            if (std::find(seq2.T_P[i].begin(), seq2.T_P[i].end(), value1) != seq2.T_P[i].end()) {
+                answer.T_P[i].push_back(value1);
+                match = 1;
+            }
+        }
+        answer.frequency += match;
+    }
+
+    //patternlist answer("A B");
+
+    return seq1;
+}
 
 int main() {
 
@@ -97,7 +132,6 @@ int main() {
         return 1;
     }
 
-    unordered_map<string, patternlist> items;
     string line;
 
     int row = 1;
@@ -115,7 +149,7 @@ int main() {
                 column = 1;
             } else {
                     items[item].sequence = item;
-                    items[item].position(row, column, item);
+                    items[item].position(row, column);
             }
         }
     }
@@ -138,16 +172,37 @@ int main() {
                 cout << item << " ";
             }
         }
+    }
+
+        // Create a list of keys to be removed
+        vector<string> keysToRemove;
+
+        // Iterate over the map to identify keys to remove
+        for (const auto& entry : items) {
+            const string& item = entry.first;
+            const patternlist& frequency = entry.second;
+            int support = frequency.getFrequency();
+            
+            if (support < minsup) {
+                keysToRemove.push_back(item);
+            }
+        }
+
+        // Remove the identified keys
+        for (const string& key : keysToRemove) {
+            items.erase(key);
+        }
 
         cout << "(Freq: ";
         for (const auto& entry : items) {
             const string& item = entry.first;
             const patternlist frequency = entry.second;
-            cout << item << ": " << frequency.getFrequency() << ", ";
+            int support = frequency.getFrequency();
+            
+            cout << item << ": " << support << ", ";
         }
         cout << ")";
         cout << endl;
-    }
 
     cout << "sequences info: " << endl;
 
@@ -159,7 +214,13 @@ int main() {
         inteminfo.printinfo();
     }
 
-    //A.printinfo();
-    //cout << "testing popwer: " << pow(10, 9) + pow(10, 7) + pow(10, 5) + pow(10, 2) + 1 << endl;
+    cout << "checking join operation" << endl;
+    // patternlist a(items["A"]);
+    // patternlist b(items["B"]);
+    patternlist join = single_itemset_join(items["A"], items["B"]);
+    join.printinfo();
+
+    // patternlist a = items["A"];
+    // a.printinfo();
     return 0;
 }
