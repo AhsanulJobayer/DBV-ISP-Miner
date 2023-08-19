@@ -11,10 +11,7 @@ class Patternlist:
         if t > self.finalT:
             self.frequency += 1
             self.finalT = t
-            self.bit_vector |= (1 << (self.finalT - 1))
-    
-
-
+            self.bit_vector |= (1 << (4* 3 - self.finalT))  
     
     def bit_positions(self):
         positions = []
@@ -42,6 +39,7 @@ class Patternlist:
         print("Bit vector of the sequence:", self.bit_vector)
         print("Bit position of 1's in the bit vector:", end=" ")
         print("Binary bit:", bin(self.bit_vector)[2:].zfill(self.finalT))
+        print("List of positions: ", self.bit_positions())
 
 
 items = {}
@@ -83,10 +81,9 @@ def single_intersequence_join(seq1, seq2):
     
     for i in t_value:
         match = 0
-        for value1 in seq1.T_P[i]:
-            if (value1 + 1) in seq2.T_P[i + 1]:
-                answer.T_P[i].append(value1)
-                match = 1
+        for value1 in seq2.T_P[i]:
+            answer.T_P[i].append(value1)
+            match = 1
         answer.frequency += match
 
     return answer
