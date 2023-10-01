@@ -1,226 +1,256 @@
-#include <bits/stdc++.h>
+#include <iostream>
 #include <fstream>
 #include <sstream>
-#include <unordered_map>
+#include <map>
 #include <vector>
-#include <string>
+#include <iterator>
+#include <algorithm>
+#include <bitset>
 
 using namespace std;
 
-int minsup = 4;
-
-struct patternlist{
+class Patternlist {
+public:
     string sequence;
+    int finalT;
+    int frequency;
+    int bit_vector;
+    vector<vector<int>> T_P;
+    vector<int> children;
 
-    int finalT = 0;
-    int frequency = 0;
-    int bit_vector = 0;
-    vector<int> T_P[64000];
-
-    patternlist()
-    {
-        //default constructor
+public:
+    Patternlist(const string& _sequence) : sequence(_sequence), finalT(0), frequency(0), bit_vector(0) {
+        T_P.resize(64000);
     }
 
-    patternlist(string _sequence)
-    {
-        sequence = _sequence;
-        
-        // Initialize vectors within the array
-        for (int i = 0; i < 64000; i++) {
-            T_P[i] = vector<int>();
-        }
-    }
-
-    patternlist(const patternlist& other) {
-        sequence = other.sequence;
-        finalT = other.finalT;
-        frequency = other.frequency;
-        bit_vector = other.bit_vector;
-        for (int i = 0; i <= finalT; i++) {
-            T_P[i] = other.T_P[i];
-        }
-    }
-
-    void position(int t, int p)
-    {
+    void position(int t, int p) {
         T_P[t].push_back(p);
-        if(t > finalT) {
+        if (t > finalT) {
             frequency++;
             finalT = t;
-            bit_vector |= (1 << (sizeof(int)*3 - finalT));
+            bit_vector |= (1 << (4 * 3 - finalT));
         }
     }
 
-        vector<int> bitPositions() const {
-            int number = bit_vector;
-            vector<int> positions;
-            int position = 1;
-            while (number != 0) {
-                if ((number & 1) != 0) {
-                    positions.push_back(position);
+    vector<int> bit_positions() {
+        vector<int> positions;
+        int position = 12;
+        int number = bit_vector;
+        while (number > 0) {
+            if (number & 1) {
+                positions.push_back(position);
+                if (position > finalT) {
+                    finalT = position;
                 }
-                position++;
-                number = number >> 1;
             }
-            return positions;
+            position--;
+            number >>= 1;
         }
+        return positions;
+    }
 
-    int getFrequency() const //returns frequency of the sequence
-    {
+    void input_T_P(int index, int value) {
+        T_P[index].push_back(value);
+    }
+
+    int get_frequency() {
         return frequency;
     }
 
-    void printinfo() const // printing all sorts of information with all kinds of format related to this patternlist
-    {
+    void print_info() {
         cout << "sequence: " << sequence << endl;
-        cout << "T and P values: " << endl;
-        for(int i = 1; i<=finalT; i++)
-        {
-            if(!T_P[i].empty())
-            {
+        cout << "T and P values:" << endl;
+        for (int i = 1; i <= finalT; i++) {
+            if (!T_P[i].empty()) {
                 cout << "T: " << i << " - P: ";
-                for(int T: T_P[i]) 
-                {
-                    cout << T << " ";
+                for (int j : T_P[i]) {
+                    cout << j << ' ';
                 }
-                cout << endl << endl;
+                cout << endl;
             }
         }
-
-        cout << "Bit vector of the sequence: " << bit_vector <<  endl;
-
-       // vector<int> positions = bitPositions();
-
+        cout << "Frequency: " << frequency << endl;
+        cout << "Bit vector of the sequence: " << bit_vector << endl;
         cout << "Bit position of 1's in the bit vector: ";
-        cout << "Binary bit: " << bitset<sizeof(int)*3>(bit_vector) << endl;
+        bitset<12> binaryBit(bit_vector);
+        cout << "Binary bit: " << binaryBit << endl;
+        vector<int> positions = bit_positions();
+        cout << "List of positions: ";
+        for (int pos : positions) {
+            cout << pos << ' ';
+        }
+        cout << endl;
     }
-
 };
 
-map<string, patternlist> items;
+class Tree {
+private:
+    Patternlist* root;
 
-patternlist single_itemset_join(const patternlist& seq1, const patternlist& seq2) {
-    cout << "testing" << endl;
-    patternlist answer(seq1.sequence + " " + seq2.sequence + " -1 -2");
-    answer.bit_vector = seq1.bit_vector & seq2.bit_vector;
-    vector<int> t_value = answer.bitPositions();
+public:
+    Tree() : root(nullptr) {}
 
-    for (int i : t_value) {
-        int match = 0;
-        for (int value1 : seq1.T_P[i]) {
-            if (std::find(seq2.T_P[i].begin(), seq2.T_P[i].end(), value1) != seq2.T_P[i].end()) {
-                answer.T_P[i].push_back(value1);
-                match = 1;
-            }
-        }
-        answer.frequency += match;
+    void add_root(const string& root_value) {
+        root = new Patternlist(root_value);
     }
 
-    //patternlist answer("A B");
+    void add_child(Patternlist* parent, Patternlist* child_patternlist) {
+        parent->children.push_back(child_patternlist);
+    }
 
-    return seq1;
-}
+    vector<Patternlist*>& get_nodes_at_level(int level) {  // Update the return type
+        return _get_nodes_at_level(root, level, 0);
+    }
+
+    vector<Patternlist*> _get_nodes_at_level(Patternlist* current_node, int target_level, int current_level) {
+        vector<Patternlist*> nodes;
+        if (current_level == target_level) {
+            nodes.push_back(current_node);
+            return nodes;
+        }
+
+        for (Patternlist* child : current_node->children) {
+            vector<Patternlist*> child_nodes = _get_nodes_at_level(child, target_level, current_level + 1);
+            nodes.insert(nodes.end(), child_nodes.begin(), child_nodes.end());
+        }
+
+        return nodes;
+    }
+};
+
+
+int minsup = 4;
 
 int main() {
-
-    ///patternlist A("A");         //testing patternList with random sequence
-
-    std::ifstream inputFile("dataset.txt");
-    if (!inputFile.is_open()) {
-        cerr << "Failed to open the input file." << endl;
-        return 1;
-    }
-
-    string line;
-
+    map<string, Patternlist> items;
     int row = 1;
     int column = 1;
+    ifstream inputFile("dataset.txt");
 
-    while (getline(inputFile, line)) {
+    if (!inputFile) {
+        cerr << "Failed to open the input file." << endl;
+        exit(1);
+    }
+
+    for (string line; getline(inputFile, line);) {
         istringstream iss(line);
-        string item;
-
-        while (iss >> item) {
+        vector<string> items_list(istream_iterator<string>(iss), {});
+        for (const string& item : items_list) {
             if (item == "-1") {
-                column++;
-            } else if(item == "-2"){
-                row++;
+                column += 1;
+            } else if (item == "-2") {
+                row += 1;
                 column = 1;
             } else {
-                    items[item].sequence = item;
-                    items[item].position(row, column);
+                if (items.find(item) == items.end()) {
+                    items[item] = Patternlist(item);
+                }
+                items[item].position(row, column);
             }
         }
     }
 
     inputFile.close();
 
-    // Reopen the file to print the results alongside the dataset
-    inputFile.open("dataset.txt");
-    while (getline(inputFile, line)) {
+    ifstream inputFile2("dataset.txt");
+    for (string line; getline(inputFile2, line);) {
         istringstream iss(line);
-        string item;
-
-        while (iss >> item) {
+        vector<string> items_list(istream_iterator<string>(iss), {});
+        for (const string& item : items_list) {
             if (item == "-1") {
                 cout << ", ";
             } else if (item == "-2") {
-                cout << "-2 ";
-                cout <<endl;
+                cout << "-2 " << endl;
+                cout << endl;
             } else {
                 cout << item << " ";
             }
         }
+        cout << endl;
     }
 
-        // Create a list of keys to be removed
-        vector<string> keysToRemove;
+    vector<string> keys_to_remove;
 
-        // Iterate over the map to identify keys to remove
-        for (const auto& entry : items) {
-            const string& item = entry.first;
-            const patternlist& frequency = entry.second;
-            int support = frequency.getFrequency();
-            
-            if (support < minsup) {
-                keysToRemove.push_back(item);
+    for (auto& pair : items) {
+        string item = pair.first;
+        Patternlist& frequency = pair.second;
+        int support = frequency.get_frequency();
+        if (support < minsup) {
+            keys_to_remove.push_back(item);
+        }
+    }
+
+    for (const string& key : keys_to_remove) {
+        items.erase(key);
+    }
+
+    cout << "(Freq: ";
+    for (const auto& pair : items) {
+        string item = pair.first;
+        Patternlist frequency = pair.second;
+        int support = frequency.get_frequency();
+        cout << item << ":" << support << ", ";
+    }
+    cout << ")" << endl;
+    cout << "sequences info:" << endl;
+
+    for (const auto& pair : items) {
+        string item = pair.first;
+        Patternlist item_info = pair.second;
+        cout << "Sequence: " << item << endl;
+        item_info.print_info();
+    }
+
+    // Tree structure maintenance
+    Tree tree;
+    Patternlist null_pattern("null");
+    tree.add_root(null_pattern);
+
+    for (auto& pair : items) {
+        Patternlist& freq = pair.second;
+        tree.add_child(tree.root, &freq);
+    }
+
+    // Level 1 operation
+    vector<Patternlist*> new_items = tree.get_nodes_at_level(1);
+
+    cout << "Checking level 1 in tree: " << endl;
+    for (Patternlist* checks : new_items) {
+        cout << "sequence------- " << checks->get_sequence() << " and frequency---- " << checks->get_frequency() << endl;
+    }
+
+    // Level 2 operation
+    int index = 2;
+
+    while (!new_items.empty()) {
+        cout << "checking level " << index << " in tree: " << endl;
+        for (Patternlist* checks : new_items) {
+            cout << "sequence------- " << checks->get_sequence() << " and frequency---- " << checks->get_frequency() << endl;
+        }
+
+        for (Patternlist* X : new_items) {
+            for (Patternlist* Y : new_items) {
+                // k-itemset join
+                Patternlist iJoin = k_itemmset_join(*X, *Y);
+                if (iJoin.get_frequency() >= minsup) {
+                    tree.add_child(X, &iJoin);
+                }
+                // K-sequence join
+                iJoin = k_sequence_join(*X, *Y);
+                if (iJoin.get_frequency() >= minsup) {
+                    tree.add_child(X, &iJoin);
+                }
+                // K-inter join
+                iJoin = k_intersequence_join(*X, *Y);
+                if (iJoin.get_frequency() >= minsup) {
+                    tree.add_child(X, &iJoin);
+                }
             }
         }
 
-        // Remove the identified keys
-        for (const string& key : keysToRemove) {
-            items.erase(key);
-        }
-
-        cout << "(Freq: ";
-        for (const auto& entry : items) {
-            const string& item = entry.first;
-            const patternlist frequency = entry.second;
-            int support = frequency.getFrequency();
-            
-            cout << item << ": " << support << ", ";
-        }
-        cout << ")";
-        cout << endl;
-
-    cout << "sequences info: " << endl;
-
-    for (const auto& entry : items) {
-        const string& item = entry.first;
-        const patternlist inteminfo = entry.second;
-
-        cout << "Sequence: " <<  item << endl;
-        inteminfo.printinfo();
+        index++;
+        new_items = tree.get_nodes_at_level(index);
     }
 
-    cout << "checking join operation" << endl;
-    // patternlist a(items["A"]);
-    // patternlist b(items["B"]);
-    patternlist join = single_itemset_join(items["A"], items["B"]);
-    join.printinfo();
-
-    // patternlist a = items["A"];
-    // a.printinfo();
     return 0;
 }

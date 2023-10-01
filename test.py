@@ -1,3 +1,7 @@
+import time
+# Record the start time
+start_time = time.time()
+
 class Patternlist:
     def __init__(self, _sequence):
         self.sequence = _sequence
@@ -79,16 +83,25 @@ def single_itemset_join(seq1, seq2):
     answer = Patternlist(seq1.sequence + " " + seq2.sequence + " -1 -2")
     answer.bit_vector = seq1.bit_vector & seq2.bit_vector
     t_value = answer.bit_positions()
+
+    count = 1
+    if seq1.sequence == seq2.sequence:
+        count = 2
     print("itemset join")
     for i in t_value:
         match = 0
+        value_count = 0  # Initialize value_count
         for value1 in seq1.T_P[i]:
             if value1 in seq2.T_P[i]:
                 answer.T_P[i].append(value1)
-                match = 1
+                value_count += seq2.T_P[i].count(value1)  # Count occurrences in seq2.T_P[i]
+                if value_count >= count:
+                    match = 1
         answer.frequency += match
+        print(f"value1: {value1}, value_count: {value_count}")  # Print for debugging purposes
 
     return answer
+
 
 def single_sequence_join(seq1, seq2):
     answer = Patternlist(seq1.sequence + " -1 " + seq2.sequence + " -1 -2")
@@ -134,14 +147,21 @@ def k_itemmset_join(seq1, seq2):
     # answer = Patternlist(seq1.sequence + " " + seq2.sequence + " -1 -2")
     answer.bit_vector = seq1.bit_vector & seq2.bit_vector
     t_value = answer.bit_positions()
+    count = 1
+    if items1[-3] == items2[-3]:
+        count = 2
     print("k-itemset join")
     for i in t_value:
         match = 0
+        value_count = 0  # Initialize value_count
         for value1 in seq1.T_P[i]:
             if value1 in seq2.T_P[i]:
                 answer.T_P[i].append(value1)
-                match = 1
+                value_count += seq2.T_P[i].count(value1)  # Count occurrences in seq2.T_P[i]
+                if value_count >= count:
+                    match = 1
         answer.frequency += match
+        print(f"value1: {value1}, value_count: {value_count}")  # Print for debugging purposes
 
     return answer
 
@@ -151,6 +171,8 @@ def k_sequence_join(seq1, seq2):
 
     # Compare items up to the second-to-last item
     if items1[:-3] == items2[:-3]:
+        answer = Patternlist(" ".join(items1[:-3]) + " " + items1[-3] + " -1 " + items2[-3] + " -1 -2")
+    elif items1[:-3] == items2[:-4]:
         answer = Patternlist(" ".join(items1[:-3]) + " " + items1[-3] + " -1 " + items2[-3] + " -1 -2")
     else:
         answer = Patternlist("none")
@@ -168,6 +190,32 @@ def k_sequence_join(seq1, seq2):
         answer.frequency += match
 
     return answer
+
+def k_intersequence_join(seq1, seq2):
+    items1 = seq1.sequence.split()  # Split sequence 1 into items
+    items2 = seq2.sequence.split()  # Split sequence 2 into items
+
+    # Compare items up to the second-to-last item
+    if items1[:-3] == items2[:-5]:
+        answer = Patternlist(" ".join(items1[:-3]) + " " + items1[-3] + " -1 -2 " + items2[-3] + " -1 -2")
+    elif items1[:-4] == items2[:-5]:
+        answer = Patternlist(" ".join(items1[:-3]) + " " + items1[-3] + " -1 -2 " + items2[-3] + " -1 -2")
+    else:
+        answer = Patternlist("none")
+        return answer
+    answer.bit_vector = ((seq1.bit_vector >> 1) & seq2.bit_vector)
+    t_value = answer.bit_positions()
+    print("Check bit vector if bin or dec: ", seq1.bit_vector)
+    for i in t_value:
+        match = 0
+        for value1 in seq2.T_P[i]:
+            answer.T_P[i].append(value1)
+            match = 1
+        answer.frequency += match
+
+    return answer
+
+# -----------------------------------Main functions with file reads -------------------------------------
 
 minsup = 4
 
@@ -259,25 +307,63 @@ for X in new_items:
         if iJoin.frequency >= minsup:
             tree.add_child(X, iJoin)
 
-new_items = tree.get_nodes_at_level(2)
+index = 2
 
-print("checking level 2 in tree: ")
-for checks in new_items:
-    print("sequence------- ", checks.sequence, " and frequency---- ", checks.frequency)
+new_items = tree.get_nodes_at_level(index)
 
-for X in new_items:
-    for Y in new_items:
-        # #k-itemset join
-        # iJoin = k_itemmset_join(X, Y)
-        # if iJoin.frequency >= minsup:
-        #     tree.add_child(X, iJoin)
-        #K-sequence join
-        iJoin = k_sequence_join(X, Y)
-        if iJoin.frequency >= minsup:
-            tree.add_child(X, iJoin)
+while new_items:
+    print("checking level",  index, " in tree: ")
+    for checks in new_items:
+        print("sequence------- ", checks.sequence, " and frequency---- ", checks.frequency)
 
-new_items = tree.get_nodes_at_level(3)
+    for X in new_items:
+        for Y in new_items:
+            #k-itemset join
+            iJoin = k_itemmset_join(X, Y)
+            if iJoin.frequency >= minsup:
+                tree.add_child(X, iJoin)
+            #K-sequence join
+            iJoin = k_sequence_join(X, Y)
+            if iJoin.frequency >= minsup:
+                tree.add_child(X, iJoin)
+            # K-inter join
+            iJoin = k_intersequence_join(X, Y)
+            if iJoin.frequency >= minsup:
+                tree.add_child(X, iJoin)
+    index+=1
+    new_items = tree.get_nodes_at_level(index)
 
-print("checking level 3 in tree: ")
-for checks in new_items:
-    print("sequence------- ", checks.sequence, " and frequency---- ", checks.frequency)
+# print("checking level 3 in tree: ")
+# for checks in new_items:
+#     print("sequence------- ", checks.sequence, " and frequency---- ", checks.frequency)
+
+# --------------------------- visualize the tree ------------------------------------------
+# import networkx as nx
+# import matplotlib.pyplot as plt
+
+# def visualize_tree(tree):
+#     G = nx.DiGraph()
+
+#     def add_nodes_and_edges(node, parent=None):
+#         G.add_node(node.sequence)
+#         if parent is not None:
+#             G.add_edge(parent.sequence, node.sequence)
+#         for child in node.children:
+#             add_nodes_and_edges(child, node)
+
+#     add_nodes_and_edges(tree.root)
+
+#     pos = nx.spring_layout(G)
+#     plt.figure(figsize=(12, 8))
+#     nx.draw(G, pos, with_labels=True, node_size=1000, node_color='skyblue', font_size=10, font_color='black', font_weight='bold')
+#     plt.title("Tree Visualization")
+#     plt.show()
+
+# visualize_tree(tree)
+
+# Record the end time
+end_time = time.time()
+
+# Calculate and print the elapsed time
+elapsed_time = end_time - start_time
+print(f"Elapsed time: {elapsed_time} seconds")
