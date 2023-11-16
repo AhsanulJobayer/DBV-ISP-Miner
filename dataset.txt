@@ -1,1 +1,10 @@
-E -1 A -1 B C D -1 K -1 H -1 J -1 E -1 -2 A -1 B C -1 E -1 K -1 G -1 I -1 -2 A -1 E -1 G -1 I -1 -2 E -1 F H -1 -2 A -1 B C -1 K -1 H -1 -2 E -1 G -1 H -1 I -1 -2 E -1 A -1 B C -1 H -1 J -1 E -1 -2 A -1 B C -1 D -1 K -1 F -1 J -1 -2 E -1 G -1 H -1 I J -1 -2 E -1 F -1 -2
+E -1 A -1 B C D -1 K -1 H -1 J -1 E -1 -2
+A -1 B C -1 E -1 K -1 G -1 I -1 -2
+A -1 E -1 G -1 I -1 -2
+E -1 F H -1 -2
+A -1 B C -1 K -1 H -1 -2
+E -1 G -1 H -1 I -1 -2
+E -1 A -1 B C -1 H -1 J -1 E -1 -2
+A -1 B C -1 D -1 K -1 F -1 J -1 -2
+E -1 G -1 H -1 I J -1 -2
+E -1 F -1 -2
