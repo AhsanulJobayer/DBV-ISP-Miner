@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <unordered_set>
+#include <set>
 
 using namespace std;
 
@@ -20,7 +21,7 @@ void readDatabaseFromFile(const string& filename) {
     while (getline(file, line)) { // Read each line
         vector<string> row;
         size_t pos = 0;
-        string delimiter = ","; // Assuming comma-separated values
+        string delimiter = " "; //  space-separated values
 
         while ((pos = line.find(delimiter)) != string::npos) {
             string token = line.substr(0, pos); // Get value up to delimiter
@@ -34,7 +35,6 @@ void readDatabaseFromFile(const string& filename) {
 
     file.close(); // Close the file
 }
-
 int countUniqueValues() {
     unordered_set<string> uniqueValues;
 
@@ -50,6 +50,34 @@ int countUniqueValues() {
 
     return uniqueValues.size();
 }
+// int countUniqueValues() {
+//     std::set<char> uniqueValues;
+
+//     for (auto& row : database) {
+//         //cout << "row   " << row << endl ;
+//         //unordered_set<string> uniqueInRow;
+//         //cout << row.size() << endl ;
+//         //cout << _row << endl ;
+//         for (auto& value : row) {
+//             string _row = value;
+
+//             //cout << "Value   " << _row << endl ;
+//             for(int i=0; _row[i]; i++)
+//             {
+//                 if (_row[i] != '1' &&_row[i] != '2' && _row[i] !='-' && _row[i]!=' ' && uniqueValues.find(_row[i]) == uniqueValues.end()) 
+//                 {
+//                 uniqueValues.insert(_row[i]);
+//                 cout << _row[i] << endl;
+//                 //uniqueInRow.insert(_row[i]);
+//                 //cout << value <<  endl ;
+//             }
+
+//             }
+//         }
+//     }
+
+//     return uniqueValues.size();
+// }
 
 int main() {
     readDatabaseFromFile("dataset.txt"); // Read database from file
