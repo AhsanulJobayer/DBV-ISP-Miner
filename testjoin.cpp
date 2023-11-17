@@ -4,10 +4,46 @@
 #include <string>
 #include <unordered_set>
 #include <set>
+#include<bits/stdc++.h>
 
 using namespace std;
-
 vector<vector<string>> database; // Global variable to store the database
+
+struct patternList
+{
+    vector<string> pattern;
+    int support = 0;
+    int start;
+    map<int, vector<int>> T_P;
+
+    void add_num(int num, vector<string> values) {
+        support += num;
+        for(const auto& value : values) {
+            pattern.push_back(value);
+        }
+    }
+
+    int print_count() {
+        return support;
+    }
+
+    void add_T_P(int t, int p) {
+        T_P[t].push_back(p);
+    }
+
+    void print_pattern() {
+        for(const auto& t_values : T_P) {
+            cout << "t : " << t_values.first << " p : ";
+            for(const auto& p_values : T_P[t_values.first]) {
+                cout << p_values << ", ";
+            } 
+            cout << endl;
+        }
+    }
+};
+
+map<string, patternList> uniqueValues; // items with support count
+map<vector<string>, patternList> frequent_patterns; //frequent sequences after join
 
 void readDatabaseFromFile(const string& filename) {
     ifstream file(filename); // Open the file
@@ -35,20 +71,27 @@ void readDatabaseFromFile(const string& filename) {
 
     file.close(); // Close the file
 }
-int countUniqueValues() {
-    unordered_set<string> uniqueValues;
-
+void countUniqueValues() {
+    int row_num = 0;
     for (const auto& row : database) {
-        unordered_set<string> uniqueInRow;
+        row_num++;
+        set<string> uniqueInRow;
+        int itemset_num = 1;
         for (const auto& value : row) {
-            if (value != "-1" && value != "-2" && uniqueInRow.find(value) == uniqueInRow.end()) {
-                uniqueValues.insert(value);
-                uniqueInRow.insert(value);
+            if(value == "-1") {
+                itemset_num++;
+            }
+            if (value != "-1" && value != "-2") {
+                if(uniqueInRow.find(value) == uniqueInRow.end()) {
+                    vector<string> temp_vect{value};
+                    uniqueValues[value].add_num(1, temp_vect);
+                    uniqueInRow.insert(value);
+                }
+                uniqueValues[value].add_T_P(row_num, itemset_num);
             }
         }
     }
-
-    return uniqueValues.size();
+    // return uniqueValues.size();
 }
 // int countUniqueValues() {
 //     std::set<char> uniqueValues;
@@ -82,9 +125,16 @@ int countUniqueValues() {
 int main() {
     readDatabaseFromFile("dataset.txt"); // Read database from file
 
-    int uniqueCount = countUniqueValues();
+    countUniqueValues();
 
-    cout << "Number of unique values (excluding -1 and -2): " << uniqueCount << endl;
+    cout << "Number of unique values (excluding -1 and -2): " << endl;
+    for(const auto& items : uniqueValues) {
+        // uniqueValues[items.first].add_num(0);
+        cout << items.first << " : " << uniqueValues[items.first].print_count() << endl;
+        cout << "PatternLists : " << endl;
+        uniqueValues[items.first].print_pattern();
+        cout << endl;
+    }
 
     return 0;
 }
