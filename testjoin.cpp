@@ -18,8 +18,10 @@ struct patternList
 
     void add_num(int num, vector<string> values) {
         support += num;
-        for(const auto& value : values) {
-            pattern.push_back(value);
+            if(!pattern.size()) {
+                        for(const auto& value : values) {
+                pattern.push_back(value);
+            }
         }
     }
 
@@ -32,6 +34,10 @@ struct patternList
     }
 
     void print_pattern() {
+        for(const auto& p : pattern) {
+            cout << p << " ";
+        }
+        cout << endl;
         for(const auto& t_values : T_P) {
             cout << "t : " << t_values.first << " p : ";
             for(const auto& p_values : T_P[t_values.first]) {
@@ -83,7 +89,7 @@ void countUniqueValues() {
             }
             if (value != "-1" && value != "-2") {
                 if(uniqueInRow.find(value) == uniqueInRow.end()) {
-                    vector<string> temp_vect{value};
+                    vector<string> temp_vect{value, "-1", "-2"};
                     uniqueValues[value].add_num(1, temp_vect);
                     uniqueInRow.insert(value);
                 }
@@ -91,36 +97,100 @@ void countUniqueValues() {
             }
         }
     }
-    // return uniqueValues.size();
 }
-// int countUniqueValues() {
-//     std::set<char> uniqueValues;
 
-//     for (auto& row : database) {
-//         //cout << "row   " << row << endl ;
-//         //unordered_set<string> uniqueInRow;
-//         //cout << row.size() << endl ;
-//         //cout << _row << endl ;
-//         for (auto& value : row) {
-//             string _row = value;
+vector<int> intersect(const vector<int>& v1, const vector<int>& v2) {
+    vector<int> result;
 
-//             //cout << "Value   " << _row << endl ;
-//             for(int i=0; _row[i]; i++)
-//             {
-//                 if (_row[i] != '1' &&_row[i] != '2' && _row[i] !='-' && _row[i]!=' ' && uniqueValues.find(_row[i]) == uniqueValues.end()) 
-//                 {
-//                 uniqueValues.insert(_row[i]);
-//                 cout << _row[i] << endl;
-//                 //uniqueInRow.insert(_row[i]);
-//                 //cout << value <<  endl ;
-//             }
+    vector<int> sorted_v1 = v1;
+    vector<int> sorted_v2 = v2;
+    sort(sorted_v1.begin(), sorted_v1.end());
+    sort(sorted_v2.begin(), sorted_v2.end());
 
-//             }
-//         }
-//     }
+    set_intersection(sorted_v1.begin(), sorted_v1.end(),
+                     sorted_v2.begin(), sorted_v2.end(),
+                     back_inserter(result));
 
-//     return uniqueValues.size();
-// }
+    return result;
+}
+
+// ------------------------------------Single join operations---------------------------------------
+patternList single_itemset_join(patternList A, patternList B) {
+    patternList C;
+    int support = 0;
+    for(const auto& tp : A.T_P) {
+        vector<int> joined_p = intersect(A.T_P[tp.first], B.T_P[tp.first]);
+        if(joined_p.size()) {
+            C.T_P[tp.first] = joined_p;
+            support++;
+        }
+    }
+
+    C.support = support;
+    C.pattern.push_back(A.pattern[0]);
+    C.pattern.push_back(B. pattern[0]);
+    C.pattern.push_back("-1");
+    C.pattern.push_back("-2");
+
+    return C;
+}
+
+patternList single_sequence_join(patternList A, patternList B) {
+    patternList C;
+    int support = 0;
+    for(const auto& tp : A.T_P) {
+        vector<int> joined_p;
+        auto min = min_element(A.T_P[tp.first].begin(), A.T_P[tp.first].end());
+        for(const auto& scnd : B.T_P[tp.first]) {
+            if(scnd > *min) {
+                joined_p.push_back(scnd);
+            } 
+        }
+        // vector<int> joined_p = intersect(A.T_P[tp.first], B.T_P[tp.first]);
+        if(joined_p.size()) {
+            C.T_P[tp.first] = joined_p;
+            support++;
+        }
+    }
+
+    C.support = support;
+    C.pattern.push_back(A.pattern[0]);
+    C.pattern.push_back("-1");
+    C.pattern.push_back(B. pattern[0]);
+    C.pattern.push_back("-1");
+    C.pattern.push_back("-2");
+
+    return C;
+}
+
+patternList single_inter_join(patternList A, patternList B) {
+    patternList C;
+    int support = 0;
+    for(const auto& tp : A.T_P) {
+        vector<int> joined_p;
+        if(B.T_P[tp.first + 1].size()) {
+                for(const auto& scnd : B.T_P[tp.first + 1]) {
+                    joined_p.push_back(scnd);
+                }
+        }
+
+        // vector<int> joined_p = intersect(A.T_P[tp.first], B.T_P[tp.first]);
+        if(joined_p.size()) {
+            C.T_P[tp.first + 1] = joined_p;
+            support++;
+        }
+    }
+
+    C.support = support;
+    C.pattern.push_back(A.pattern[0]);
+    C.pattern.push_back("-1");
+    C.pattern.push_back("-2");
+    C.pattern.push_back(B. pattern[0]);
+    C.pattern.push_back("-1");
+    C.pattern.push_back("-2");
+
+    return C;
+}
 
 int main() {
     readDatabaseFromFile("dataset.txt"); // Read database from file
@@ -133,6 +203,31 @@ int main() {
         cout << items.first << " : " << uniqueValues[items.first].print_count() << endl;
         cout << "PatternLists : " << endl;
         uniqueValues[items.first].print_pattern();
+        cout << endl;
+    }
+
+    cout << "Looping single join for 2-frequent" << endl;
+    for(const auto& A : uniqueValues) {
+        for(const auto& B : uniqueValues) {
+            patternList answer1 = single_itemset_join(uniqueValues[A.first], uniqueValues[B.first]);
+            if(answer1.print_count() >=4) {
+                frequent_patterns[answer1.pattern] = answer1;
+            }
+            patternList answer2 = single_sequence_join(uniqueValues[A.first], uniqueValues[B.first]);
+            if(answer2.print_count() >=4) {
+                frequent_patterns[answer2.pattern] = answer2;
+            }
+            patternList answer3 = single_inter_join(uniqueValues[A.first], uniqueValues[B.first]);
+            if(answer3.print_count() >=4) {
+                frequent_patterns[answer3.pattern] = answer3;
+            }
+        }
+    }
+
+    for(const auto& freq : frequent_patterns) {
+        cout << "support" << " : " << frequent_patterns[freq.first].print_count() << endl;
+        cout << "PatternLists : " << endl;
+        frequent_patterns[freq.first].print_pattern();
         cout << endl;
     }
 
