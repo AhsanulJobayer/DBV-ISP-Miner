@@ -19,6 +19,8 @@ vector<double> lmaxw;
 vector<double> lmmw;
 double tmmw;
 
+int algoType = 1;
+
 struct patternList
 {
     vector<string> pattern;
@@ -67,12 +69,12 @@ map<string, patternList> uniqueValues; // items with support count
 map<int, map<vector<string>, patternList>> frequent_patterns; //frequent sequences after join
 
 // --------------------------------------- dataset input from txt file -------------------------------------------
-void readDatabaseFromFile(const string& filename) {
+int readDatabaseFromFile(const string& filename) {
     ifstream file(filename); // Open the file
 
     if (!file.is_open()) {
-        cout << "Error opening the file." << endl;
-        return;
+        cout << "Error opening the dataset file." << endl;
+        return 1;
     }
 
     string line;
@@ -92,15 +94,17 @@ void readDatabaseFromFile(const string& filename) {
     }
 
     file.close(); // Close the file
+
+    return 0;
 }
 
 // ------------------------------------element weight input from file---------------------------------
-void readWeightFromFile(const string& filename) {
+int readWeightFromFile(const string& filename) {
     ifstream file(filename); // Open the file
 
     if (!file.is_open()) {
-        cout << "Error opening the file." << endl;
-        return;
+        cout << "Error opening the weight file." << endl;
+        return 1;
     }
 
     string line;
@@ -117,6 +121,8 @@ void readWeightFromFile(const string& filename) {
     }
 
     file.close(); // Close the file
+
+    return 0;
 }
 
 //------------------------------Avg weight count------------------------------------------------------
@@ -166,7 +172,7 @@ double WSUP( patternList A) {
 }
 
 //------------------------------TWSPAN----------------------------------------------------------------
-double MaxPossibleWeight(patternList A) {
+double TWSPAN(patternList A) {
     double weight = 0;
 
     // vector<double> weightseq = weightSeq(A);
@@ -196,36 +202,49 @@ double TIUA(patternList A) {
 
 
 //------------------------------Max Possible Weight Support ------------------------------------------
-// double MaxPossibleWeight(patternList A) {
-//     int maxspan = 2;
-//     double weightit = 0;
-//     double MaxPWS = 0;
+double MaxPossibleWeight(patternList A) {
+    int maxspan = 2;
+    double weightit = 0;
+    double MaxPWS = 0;
 
-//     vector<double> weightseq = weightSeq(A);
+    vector<double> weightseq = weightSeq(A);
 
-//     for(auto i : weightseq) {
-//         weightit += i;
-//     }
-//     int inter_length = weightseq.size();
-//     weightit = weightit/inter_length;
+    for(auto i : weightseq) {
+        weightit += i;
+    }
+    int inter_length = weightseq.size();
+    weightit = weightit/inter_length;
 
-//     for(auto T : A.T_P) {
-//         int t = maxspan - A.T_length + 1;
-//         double pws = (A.T_length - 1) * weightit;
-//         int i = T.first - 1;
-//         while(t--) {
-//             pws += (element_weight[Pm[i]] + (possibleLegth[i] - 1) * lmmw[i])/possibleLegth[i];
-//             i++;
-//         }
-//         MaxPWS += pws/A.T_length;
+    for(auto T : A.T_P) {
+        int t = maxspan - A.T_length + 1;
+        double pws = (A.T_length - 1) * weightit;
+        int i = T.first - 1;
+        while(t--) {
+            pws += (element_weight[Pm[i]] + (possibleLegth[i] - 1) * lmmw[i])/possibleLegth[i];
+            i++;
+        }
+        MaxPWS += pws/A.T_length;
 
-//         // if(pws > MaxPWS) {MaxPWS = pws;}
-//     }
+        // if(pws > MaxPWS) {MaxPWS = pws;}
+    }
 
-//     // double tmmw = accumulate(lmmw.begin(), lmmw.end(), 0);
+    // double tmmw = accumulate(lmmw.begin(), lmmw.end(), 0);
 
-//     return MaxPWS/tmmw;
-// }
+    return MaxPWS/tmmw;
+}
+
+double weightCall(patternList A, int algo) {
+    if(algo == 1) {
+        return TWSPAN(A);
+    }
+    if(algo == 2) {
+        return TIUA(A);
+    }
+    if(algo == 3) {
+        return MaxPossibleWeight(A);
+    }
+    return 0;
+}
 
 // ---------------------------single unique item with possible sequence length-------------------------------------
 void countUniqueValues() {
@@ -301,7 +320,7 @@ patternList single_itemset_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length;
-        C.weight = MaxPossibleWeight(C);
+        C.weight = weightCall(C, algoType);
     }
     return C;
 }
@@ -333,7 +352,7 @@ patternList single_sequence_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length;
-        C.weight = MaxPossibleWeight(C);
+        C.weight = weightCall(C, algoType);
     }
 
     return C;
@@ -367,7 +386,7 @@ patternList single_inter_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length + 1;
-        C.weight = MaxPossibleWeight(C);
+        C.weight = weightCall(C, algoType);
     }
 
     return C;
@@ -411,7 +430,7 @@ patternList K_itemset_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length;
-        C.weight = MaxPossibleWeight(C);
+        C.weight = weightCall(C, algoType);
     }
 
     return C;
@@ -471,7 +490,7 @@ patternList K_sequence_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length;
-        C.weight = MaxPossibleWeight(C);
+        C.weight = weightCall(C, algoType);
     }
 
     return C;
@@ -519,7 +538,7 @@ patternList K_inter_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length + 1;
-        C.weight = MaxPossibleWeight(C);
+        C.weight = weightCall(C, algoType);
     }
 
     return C;
@@ -541,12 +560,36 @@ void answer_print(int k_length) {
 //----------------------- main ---------------------------------------------
 int main() {
 
+    cout << "Algo Type: " << endl;
+    cout << "1: TWSPAN" << endl;
+    cout << "2: TIUA" << endl;
+    cout << "3: MaxPWS" << endl;
+
+    cin >> algoType;
+
+    string data_file;
+    string data_weight_file;
+
+    cout << "DATASET File: ";
+    cin >> data_file;
+    cout << endl;
+
+    cout << "DATA WEIGHT FILE: ";
+    cin >> data_weight_file;
+    cout << endl;
+
+    double threshold = 0.5;
+    cout << "threshold: ";
+    cin >> threshold;
+    cout << endl;
+
      // Record the start time
     auto start = chrono::high_resolution_clock::now();
 
-    double threshold = 0.3;
-    readDatabaseFromFile("LEVIATHAN.txt"); // Read database from file
-    readWeightFromFile("weight_LEVIATHAN.txt");
+    int D = readDatabaseFromFile(data_file); // Read database from file
+    if(D == 1) return 1;
+    int W = readWeightFromFile(data_weight_file);// Read data weight from file
+    if(W == 1) return 1;
 
     countUniqueValues();
     tmmw = 0;
@@ -565,9 +608,8 @@ int main() {
         tmmw += max;
     }
 
-    cout << "Number of unique values (excluding -1 and -2): " << endl;
     for(const auto& items : uniqueValues) {
-        uniqueValues[items.first].weight = MaxPossibleWeight(uniqueValues[items.first]);
+        uniqueValues[items.first].weight = weightCall(uniqueValues[items.first], algoType);
         cout << items.first << " : " << uniqueValues[items.first].print_count() << endl;
         cout << "PatternLists : " << endl;
         uniqueValues[items.first].print_pattern();
@@ -575,7 +617,8 @@ int main() {
     }
 
     // int start = 0, end = 0;
-
+    int elNUM = 0;
+    
     cout << "Looping single join for 2-frequent" << endl;
     for(const auto& A : uniqueValues) {
         for(const auto& B : uniqueValues) {
@@ -598,10 +641,13 @@ int main() {
                     frequent_patterns[2][answer3.pattern] = answer3;
                 }    
 
+                elNUM++;
             }
 
         }
     }
+
+    cout << "Number of unique values (excluding -1 and -2): " << elNUM << endl;
 
     cout << "Looping single join for K-frequent" << endl;
     int k_length = 2;
