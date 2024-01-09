@@ -225,10 +225,10 @@ double MaxPossibleWeight(patternList A) {
             double pws = (A.T_length - 1) * weightit;
             int i = T->first - 1;
             while(tempT--) {
-                pws += (element_weight[Pm[i]] + (possibleLegth[i] - 1) * lmaxw[i])/possibleLegth[i];
+                pws += (element_weight[Pm[i]] + (possibleLegth[i] - 1) * lmmw[i])/possibleLegth[i];
                 i++;
             }
-            MaxPWS[newT] += pws/A.T_length;
+            MaxPWS[newT] += pws/(A.T_length + newT);
 
             if(max_pws < MaxPWS[newT]) {max_pws = MaxPWS[newT];}
         }
@@ -243,6 +243,9 @@ double MaxPossibleWeight(patternList A) {
 }
 
 double weightCall(patternList A, int algo) {
+    if(algo == 0) {
+        return WSUP(A);
+    }
     if(algo == 1) {
         return TWSPAN(A);
     }
@@ -570,6 +573,7 @@ void answer_print(int k_length) {
 int main() {
 
     cout << "Algo Type: " << endl;
+    cout << "0: WSUP" << endl;
     cout << "1: TWSPAN" << endl;
     cout << "2: TIUA" << endl;
     cout << "3: MaxPWS" << endl;
