@@ -205,7 +205,8 @@ double TIUA(patternList A) {
 double MaxPossibleWeight(patternList A) {
     int maxspan = 2;
     double weightit = 0;
-    double MaxPWS = 0;
+    map<int, double> MaxPWS;
+    double max_pws = 0;
 
     vector<double> weightseq = weightSeq(A);
 
@@ -214,23 +215,31 @@ double MaxPossibleWeight(patternList A) {
     }
     int inter_length = weightseq.size();
     weightit = weightit/inter_length;
-
-    for(auto T : A.T_P) {
+    set<int> uniqueT;
+    for (auto T = A.T_P.rbegin(); T != A.T_P.rend(); ++T) {
         int t = maxspan - A.T_length + 1;
-        double pws = (A.T_length - 1) * weightit;
-        int i = T.first - 1;
-        while(t--) {
-            pws += (element_weight[Pm[i]] + (possibleLegth[i] - 1) * lmmw[i])/possibleLegth[i];
-            i++;
+        uniqueT.insert(t);
+        for(auto newT: uniqueT) {
+            int tempT = newT;
+
+            double pws = (A.T_length - 1) * weightit;
+            int i = T->first - 1;
+            while(tempT--) {
+                pws += (element_weight[Pm[i]] + (possibleLegth[i] - 1) * lmaxw[i])/possibleLegth[i];
+                i++;
+            }
+            MaxPWS[newT] += pws/A.T_length;
+
+            if(max_pws < MaxPWS[newT]) {max_pws = MaxPWS[newT];}
         }
-        MaxPWS += pws/A.T_length;
+
 
         // if(pws > MaxPWS) {MaxPWS = pws;}
     }
 
     // double tmmw = accumulate(lmmw.begin(), lmmw.end(), 0);
 
-    return MaxPWS/tmmw;
+    return max_pws/tmmw;
 }
 
 double weightCall(patternList A, int algo) {
@@ -608,8 +617,13 @@ int main() {
         tmmw += max;
     }
 
+    int elNUM = 0;
+
     for(const auto& items : uniqueValues) {
         uniqueValues[items.first].weight = weightCall(uniqueValues[items.first], algoType);
+        if(uniqueValues[items.first].weight >= threshold) {
+            elNUM++;
+        }
         cout << items.first << " : " << uniqueValues[items.first].print_count() << endl;
         cout << "PatternLists : " << endl;
         uniqueValues[items.first].print_pattern();
@@ -617,7 +631,6 @@ int main() {
     }
 
     // int start = 0, end = 0;
-    int elNUM = 0;
     
     cout << "Looping single join for 2-frequent" << endl;
     for(const auto& A : uniqueValues) {
@@ -640,8 +653,6 @@ int main() {
                     // cout << answer3.weight << " " << answer3.support << endl;
                     frequent_patterns[2][answer3.pattern] = answer3;
                 }    
-
-                elNUM++;
             }
 
         }
