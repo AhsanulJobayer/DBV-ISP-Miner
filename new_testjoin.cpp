@@ -27,6 +27,7 @@ struct patternList
     int support = 0;
     int T_length = 1;
     double weight = 0;
+    double wsup = 0;
     int start;
     map<int, vector<int>> T_P;
 
@@ -333,6 +334,7 @@ patternList single_itemset_join(patternList A, patternList B) {
     if(support != 0) {
         C.T_length = A.T_length;
         C.weight = weightCall(C, algoType);
+        C.wsup = weightCall(C, 0);
     }
     return C;
 }
@@ -365,6 +367,7 @@ patternList single_sequence_join(patternList A, patternList B) {
     if(support != 0) {
         C.T_length = A.T_length;
         C.weight = weightCall(C, algoType);
+        C.wsup = weightCall(C, 0);
     }
 
     return C;
@@ -399,6 +402,7 @@ patternList single_inter_join(patternList A, patternList B) {
     if(support != 0) {
         C.T_length = A.T_length + 1;
         C.weight = weightCall(C, algoType);
+        C.wsup = weightCall(C, 0);
     }
 
     return C;
@@ -443,6 +447,7 @@ patternList K_itemset_join(patternList A, patternList B) {
     if(support != 0) {
         C.T_length = A.T_length;
         C.weight = weightCall(C, algoType);
+        C.wsup = weightCall(C, 0);
     }
 
     return C;
@@ -503,6 +508,7 @@ patternList K_sequence_join(patternList A, patternList B) {
     if(support != 0) {
         C.T_length = A.T_length;
         C.weight = weightCall(C, algoType);
+        C.wsup = weightCall(C, 0);
     }
 
     return C;
@@ -551,6 +557,7 @@ patternList K_inter_join(patternList A, patternList B) {
     if(support != 0) {
         C.T_length = A.T_length + 1;
         C.weight = weightCall(C, algoType);
+        C.wsup = weightCall(C, 0);// weighted support of the pattern
     }
 
     return C;
