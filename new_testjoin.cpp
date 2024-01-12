@@ -19,6 +19,8 @@ vector<double> lmaxw;
 vector<double> lmmw;
 double tmmw;
 
+double threshold = 0.5; // threshold declared as golbally
+
 int algoType = 1;
 
 struct patternList
@@ -62,12 +64,14 @@ struct patternList
         }
 
         cout << "weight : " << weight << endl;
+        cout << "wsup : " << wsup << endl;
         cout << "T_length : " << T_length << endl;
     }
 };
 
 map<string, patternList> uniqueValues; // items with support count
 map<int, map<vector<string>, patternList>> frequent_patterns; //frequent sequences after join
+map<int, map<vector<string>, patternList>> actual_frequent_patterns;
 
 // --------------------------------------- dataset input from txt file -------------------------------------------
 int readDatabaseFromFile(const string& filename) {
@@ -221,12 +225,12 @@ double MaxPossibleWeight(patternList A) {
         int t = maxspan - A.T_length + 1;
         uniqueT.insert(t);
         for(auto newT: uniqueT) {
-            int tempT = newT;
+            int tempT = newT + 1;
 
             double pws = (A.T_length - 1) * weightit;
             int i = T->first - 1;
             while(tempT--) {
-                pws += (element_weight[Pm[i]] + (possibleLegth[i] - 1) * lmmw[i])/possibleLegth[i];
+                pws += lmmw[i];
                 i++;
             }
             MaxPWS[newT] += pws/(A.T_length + newT);
@@ -333,8 +337,13 @@ patternList single_itemset_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length;
-        C.weight = weightCall(C, algoType);
         C.wsup = weightCall(C, 0);
+        if(C.wsup < threshold) {
+            C.weight = weightCall(C, algoType);
+        }
+        else {
+            C.weight = C.wsup;
+        }
     }
     return C;
 }
@@ -366,8 +375,13 @@ patternList single_sequence_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length;
-        C.weight = weightCall(C, algoType);
         C.wsup = weightCall(C, 0);
+        if(C.wsup < threshold) {
+            C.weight = weightCall(C, algoType);
+        }
+        else {
+            C.weight = C.wsup;
+        }
     }
 
     return C;
@@ -401,8 +415,13 @@ patternList single_inter_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length + 1;
-        C.weight = weightCall(C, algoType);
         C.wsup = weightCall(C, 0);
+        if(C.wsup < threshold) {
+            C.weight = weightCall(C, algoType);
+        }
+        else {
+            C.weight = C.wsup;
+        }
     }
 
     return C;
@@ -446,8 +465,13 @@ patternList K_itemset_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length;
-        C.weight = weightCall(C, algoType);
         C.wsup = weightCall(C, 0);
+        if(C.wsup < threshold) {
+            C.weight = weightCall(C, algoType);
+        }
+        else {
+            C.weight = C.wsup;
+        }
     }
 
     return C;
@@ -507,8 +531,13 @@ patternList K_sequence_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length;
-        C.weight = weightCall(C, algoType);
         C.wsup = weightCall(C, 0);
+        if(C.wsup < threshold) {
+            C.weight = weightCall(C, algoType);
+        }
+        else {
+            C.weight = C.wsup;
+        }
     }
 
     return C;
@@ -556,8 +585,13 @@ patternList K_inter_join(patternList A, patternList B) {
 
     if(support != 0) {
         C.T_length = A.T_length + 1;
-        C.weight = weightCall(C, algoType);
         C.wsup = weightCall(C, 0);// weighted support of the pattern
+        if(C.wsup < threshold) {
+            C.weight = weightCall(C, algoType);
+        }
+        else {
+            C.weight = C.wsup;
+        }
     }
 
     return C;
@@ -598,7 +632,6 @@ int main() {
     cin >> data_weight_file;
     cout << endl;
 
-    double threshold = 0.5;
     cout << "threshold: ";
     cin >> threshold;
     cout << endl;
@@ -629,9 +662,17 @@ int main() {
     }
 
     int elNUM = 0;
-
+    int freq_elNUM = 0;
     for(const auto& items : uniqueValues) {
-        uniqueValues[items.first].weight = weightCall(uniqueValues[items.first], algoType);
+        uniqueValues[items.first].wsup = weightCall(uniqueValues[items.first], 0);
+        if(uniqueValues[items.first].wsup >= threshold) {
+            uniqueValues[items.first].weight = uniqueValues[items.first].wsup;
+            actual_frequent_patterns[1][uniqueValues[items.first].pattern] = uniqueValues[items.first];
+            freq_elNUM++;
+        }
+        else {
+            uniqueValues[items.first].weight = weightCall(uniqueValues[items.first], algoType);
+        }
         if(uniqueValues[items.first].weight >= threshold) {
             elNUM++;
         }
@@ -648,39 +689,51 @@ int main() {
         for(const auto& B : uniqueValues) {
             if(uniqueValues[A.first].weight >= threshold && uniqueValues[B.first].weight >= threshold) {
                 // cout << A.first[0] << " " << B.first[0] << endl;
-
+                // cout << A.first << " " << B.first << endl;
                 patternList answer1 = single_itemset_join(uniqueValues[A.first], uniqueValues[B.first]);
+                // cout << answer1.weight << " " << answer1.support << endl;
                 if(answer1.weight >=threshold) {
                     // cout << answer1.weight << " " << answer1.support << endl;
                     frequent_patterns[2][answer1.pattern] = answer1;
+                    if(answer1.wsup >= threshold) {
+                        actual_frequent_patterns[2][answer1.pattern] = answer1;
+                    }
                 }
                 patternList answer2 = single_sequence_join(uniqueValues[A.first], uniqueValues[B.first]);
+                // cout << answer2.weight << " " << answer2.support << endl;
                 if(answer2.weight >=threshold) {
                     // cout << answer2.weight << " " << answer2.support << endl;
                     frequent_patterns[2][answer2.pattern] = answer2;
+                    if(answer2.wsup >= threshold) {
+                        actual_frequent_patterns[2][answer2.pattern] = answer2;
+                    }
                 }
                 patternList answer3 = single_inter_join(uniqueValues[A.first], uniqueValues[B.first]);
+                // cout << answer3.weight << " " << answer3.support << endl;
                 if(answer3.weight >=threshold) {
                     // cout << answer3.weight << " " << answer3.support << endl;
                     frequent_patterns[2][answer3.pattern] = answer3;
+                    if(answer3.wsup >= threshold) {
+                        actual_frequent_patterns[2][answer3.pattern] = answer3;
+                    }
                 }    
             }
 
         }
     }
 
-    cout << "Number of unique values (excluding -1 and -2): " << elNUM << endl;
+    cout << "Number of unique values (excluding -1 and -2)[frequent]: " << freq_elNUM << "candidate values: " << elNUM << endl;
 
     cout << "Looping single join for K-frequent" << endl;
     int k_length = 2;
     while(frequent_patterns[k_length].size() != 0) {
         // if(k_length == 2) {
-        //     answer_print(k_length);       
+            answer_print(k_length);       
         // }
          
         
         // if(k_length > 6){break;}
-        cout << "Looping single join for " << k_length + 1 << "-frequent" << " size : " << frequent_patterns[k_length].size() <<endl;
+        cout << "Looping single join for " << k_length + 1 << "-candidate" << " size : " << frequent_patterns[k_length].size() << " -frequent size" << actual_frequent_patterns[k_length].size() << endl;
         for(const auto& A : frequent_patterns[k_length]) {
             for(const auto& B : frequent_patterns[k_length]) {
                 // cout << "I'm In..." << A.first[0] << " " << B.first[0] << endl;
@@ -688,14 +741,23 @@ int main() {
                 patternList answer1 = K_itemset_join(frequent_patterns[k_length][A.first], frequent_patterns[k_length][B.first]);
                 if(answer1.weight >=threshold) {
                     frequent_patterns[k_length + 1][answer1.pattern] = answer1;
+                    if(answer1.wsup >= threshold) {
+                        actual_frequent_patterns[k_length + 1][answer1.pattern] = answer1;
+                    }
                 }
                 patternList answer2 = K_sequence_join(frequent_patterns[k_length][A.first], frequent_patterns[k_length][B.first]);
                 if(answer2.weight >=threshold) {
                     frequent_patterns[k_length + 1][answer2.pattern] = answer2;
+                    if(answer2.wsup >= threshold) {
+                        actual_frequent_patterns[k_length + 1][answer2.pattern] = answer2;
+                    }
                 }
                 patternList answer3 = K_inter_join(frequent_patterns[k_length][A.first], frequent_patterns[k_length][B.first]);
                 if(answer3.weight >=threshold) {
                     frequent_patterns[k_length + 1][answer3.pattern] = answer3;
+                    if(answer3.wsup >= threshold) {
+                        actual_frequent_patterns[k_length + 1][answer3.pattern] = answer3;
+                    }
                 }
 
             }
