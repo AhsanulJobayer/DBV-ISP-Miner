@@ -728,7 +728,7 @@ int main() {
     int k_length = 2;
     while(frequent_patterns[k_length].size() != 0) {
         // if(k_length == 2) {
-            answer_print(k_length);       
+            // answer_print(k_length);       
         // }
          
         
